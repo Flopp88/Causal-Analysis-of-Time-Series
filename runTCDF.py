@@ -321,7 +321,7 @@ def tcdf_output_to_adapted_output(allcauses, alldelays, columns):
 parser = argparse.ArgumentParser(description='TCDF: Temporal Causal Discovery Framework')
 
 parser.add_argument('--cuda', action="store_true", default=False, help='Use CUDA (GPU) (default: False)')
-parser.add_argument('--epochs', type=check_positive, default=500, help='Number of epochs (default: 2000)')
+parser.add_argument('--epochs', type=check_positive, default=5000, help='Number of epochs (default: 2000)')
 parser.add_argument('--kernel_size', type=check_positive, default=4, help='Size of kernel, i.e. window size. Maximum delay to be found is kernel size - 1. Recommended to be equal to dilation coeffient (default: 4)')
 parser.add_argument('--hidden_layers', type=check_zero_or_positive, default=1, help='Number of hidden layers in the depthwise convolution (default: 1)')
 parser.add_argument('--learning_rate', type=float, default=0.01, help='Learning rate (default: 0.01)')
