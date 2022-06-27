@@ -197,7 +197,7 @@ if __name__ == "__main__":
             gt_file = file
 
     dir = os.listdir(f"Results/PCMCI+_Results_{architecture}/gpdc")
-    tocsv = []
+
     for file in dir:
         if file.endswith('.csv'):
             print('Evaluation of file : ', file)
@@ -205,11 +205,8 @@ if __name__ == "__main__":
             print('tau_max = ', tau_max)
             gtpddata = pd.read_csv(f"Results/PCMCI+_Results_{architecture}/{gt_file}", header=None)
             predfile = pd.read_csv(f"Results/PCMCI+_Results_{architecture}/gpdc/{file}", header=None)
-            save = evaluate(gtpddata,
+            evaluate(gtpddata,
                             predfile,
                             nb_var=nb_of_variables, tau_max=tau_max)
 
-            tocsv.append(save)
-    saveframe = pd.DataFrame(tocsv)
-    saveframe=saveframe.transpose()
-    saveframe.to_csv("test.csv", index=False, header=False)
+
