@@ -20,12 +20,11 @@ for country in set(data["Member State"]):
             if product not in list_countries[-1][1]:
                 list_countries[-1][1].append(product)
 
-print(list_countries)
+
 
 dic = {'date': pd.date_range(start=sdate, end=edate, freq="MS")
        }
 df = pd.DataFrame(dic)
-print(df)
 
 lenlist = []
 final_countries = []
@@ -42,7 +41,6 @@ for country in list_countries:
         g.index = g.index.to_timestamp()
 
         if len(g) >= 100:
-            print(country[0], cereal)
             final_countries.append(country[0])
             final_cereal.append(cereal)
 
@@ -54,31 +52,26 @@ for country in list_countries:
             mask = (df2['date'] >= sdate) & (df2['date'] <= edate)
             df2 = df2.loc[mask]
             df = pd.merge(df, df2, on="date", how="outer")
-            # print(df)
+
 
             lenlist.append(len(df2["date"]))
 
-print(max(lenlist))
-print(min(lenlist))
-print(len(lenlist))
 
 final_countries = list(set(final_countries))
 final_cereal = list(set(final_cereal))
-print(final_cereal)
 
 for i in range(len(final_cereal)):
     if ' ' in final_cereal[i]:
         final_cereal[i] = final_cereal[i].rpartition(' ')[-1]
 
 final_cereal = list(set(final_cereal))
-print(final_cereal)
-print(final_countries)
 
 for i in df.drop(['date'], axis=1):
     if df[i].isnull().values.any():
+        print("price",i, df[i].isnull().values.sum())
         y = df[df[i].isnull() == False][i]
         x = y.index
-        f = interp1d(x, y, kind="cubic")
+        f = interp1d(x, y, kind="linear")
         xnew = np.linspace(0, 99, num=100, endpoint=True)
 
         df[i] = f(xnew)
@@ -108,9 +101,11 @@ trade_data = trade_data.drop(trade_data[trade_data['Product Group'] == "Other ce
 trade_data = trade_data.drop(trade_data[trade_data['Product Group'] == "Sorghum"].index)
 trade_data = trade_data.drop(trade_data[trade_data['Product Group'] == "Triticale"].index)
 
+
 for country in list(set(trade_data["Member State"])):
     if country not in final_countries:
         trade_data = trade_data.drop(trade_data[trade_data["Member State"] == country].index)
+
 
 trade_data['Month Date'] = pd.to_datetime(trade_data['Month Date'], dayfirst=True)
 
@@ -143,7 +138,7 @@ for country in export_countries:
         mask = (df3['date'] >= sdate) & (df3['date'] <= edate)
         df3 = df3.loc[mask]
         dfexport = pd.merge(dfexport, df3, on="date", how="outer")
-        # print(df)
+
 
 droplist = [i for i in dfexport.columns[1:] if (
         math.isnan(dfexport[i].iloc[0]) or math.isnan(dfexport[i].iloc[-1]) or math.isinf(
@@ -156,9 +151,10 @@ dfexport = dfexport.drop(droplist, axis=1)
 
 for i in dfexport.drop(['date'], axis=1):
     if dfexport[i].isnull().values.any() or dfexport[i].isin([np.inf]).values.any():
+        print("export", i, dfexport[i].isnull().values.sum())
         y = dfexport[(dfexport[i].isnull() == False) & (dfexport[i].isin([np.inf]) == False)][i]
         x = y.index
-        f = interp1d(x, y, kind="cubic")
+        f = interp1d(x, y, kind="linear")
         xnew = np.linspace(0, 99, num=100, endpoint=True)
 
         dfexport[i] = f(xnew)
@@ -208,7 +204,7 @@ for country in import_countries:
         mask = (df4['date'] >= sdate) & (df4['date'] <= edate)
         df4 = df4.loc[mask]
         dfimport = pd.merge(dfimport, df4, on="date", how="outer")
-        # print(df)
+
 
 droplist = [i for i in dfimport.columns[1:] if (
         math.isnan(dfimport[i].iloc[0]) or math.isnan(dfimport[i].iloc[-1]) or math.isinf(
@@ -221,9 +217,10 @@ dfimport = dfimport.drop(droplist, axis=1)
 
 for i in dfimport.drop(['date'], axis=1):
     if dfimport[i].isnull().values.any() or dfimport[i].isin([np.inf]).values.any():
+        print("import", i, dfimport[i].isnull().values.sum())
         y = dfimport[(dfimport[i].isnull() == False) & (dfimport[i].isin([np.inf]) == False)][i]
         x = y.index
-        f = interp1d(x, y, kind="cubic")
+        f = interp1d(x, y, kind="linear")
         xnew = np.linspace(0, 99, num=100, endpoint=True)
 
         dfimport[i] = f(xnew)
@@ -257,8 +254,20 @@ final_df = pd.merge(df, dfimport, on="date", how="outer")
 final_df = pd.merge(final_df, dfexport, on="date", how="outer")
 final_df=final_df.drop(columns=['date'])
 
-#final_df.to_csv("cereal_database.csv    ", index=False)
-#final_df.to_excel("cereal_database.xlsx", index=False)
+plt.plot(final_df.iloc[:,3])
+
+final_df= final_df.diff(axis=0)
+plt.plot(final_df.iloc[:,3])
+plt.title(final_df.columns[3])
+plt.legend(["Non stationnary data","Data after diff function"])
+plt.show()
+final_df=final_df.drop(labels=0,axis=0)
+
+#final_df.to_csv("cereal_database_linear.csv", index=False)
+#final_df.to_excel("cereal_database_linear.xlsx", index=False)
+
+#df.drop(columns="date").to_csv("cereal_prices_linear.csv", index=False)
+
 
 
 '''Prices database: https://agridata.ec.europa.eu/extensions/DashboardCereals/ExtCerealsPrice.html#
