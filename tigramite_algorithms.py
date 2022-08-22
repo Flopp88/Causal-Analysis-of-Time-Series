@@ -31,7 +31,7 @@ def determine_tau_max(var_names, dataframe, indeptest, method="get_lagged_depend
     # the tau max value should be the maximal tau value where a dependency graph has its maximum absolute value
     pcmci = PCMCI(dataframe=dataframe,
                   cond_ind_test=indeptest,
-                  verbosity=0)
+                  verbosity=1)
 
     if method == "get_lagged_dependencies":
         correlations = pcmci.get_lagged_dependencies(tau_max=10, val_only=True)['val_matrix']
@@ -110,10 +110,6 @@ def select_indeptes(indeptest):
     return test
 
 
-def undirected_graph_conversion(gtgraph, undirected_graph):
-    return
-
-
 def architecture_prediction(method_name, architecture, dir, indeptest, gt_file, nb_points, tau_max_list, tau_min=0,
                             pc_alpha=0.01):
     test = select_indeptes(indeptest)
@@ -128,11 +124,11 @@ def architecture_prediction(method_name, architecture, dir, indeptest, gt_file, 
         ["filename", "TPR", "FPR", "Precision on the edges", "Recall", "F1 score", "Precision on the predicted lags",
          "Frobenius Norm", "MSE", "Structural Hamming distance"]]
 
-    dir = ['7ts2h5.csv', '7ts2h6.csv', '7ts2h7.csv', '7ts2h8.csv', '7ts2h9.csv']
+    ##dir = ['7ts2h5.csv', '7ts2h6.csv', '7ts2h7.csv', '7ts2h8.csv', '7ts2h9.csv']
     for file in dir:
         if file.endswith('groundtruth.csv') is False:
-            # tau_max_pos = int(remove_suffix(file, '.csv')[-1])
-            # tau_max = tau_max_list[tau_max_pos]
+            tau_max_pos = int(remove_suffix(file, '.csv')[-1])
+
 
             print(file)
             dataframe, var_names = data_processing(f"ProcessedData/{architecture}/{file}", nb_points=nb_points)
@@ -142,7 +138,7 @@ def architecture_prediction(method_name, architecture, dir, indeptest, gt_file, 
             print("Input tau_max value for this dataset: ")
             tau_max = int(input())
 
-            # tau_max = 1
+            #tau_max = tau_max_list[tau_max_pos]
 
             if method_name == "PCMCI+":
                 hconf_detection = False
@@ -153,7 +149,7 @@ def architecture_prediction(method_name, architecture, dir, indeptest, gt_file, 
 
                 graph = pcmci.run_pcmciplus(tau_min=tau_min, tau_max=tau_max, pc_alpha=pc_alpha)['graph']
             elif method_name == "LPCMCI":
-                hconf_detection = False
+                hconf_detection = True
                 pcmci = LPCMCI(
                     dataframe=dataframe,
                     cond_ind_test=test,
@@ -175,7 +171,7 @@ def architecture_prediction(method_name, architecture, dir, indeptest, gt_file, 
             pdgraph = pd.DataFrame(list(reader(converted_graph))).astype(int)
             readgt, delays = getdelays(pdgraph, len(var_names))
 
-            plotgraph(delays, len(var_names), 'black')
+            plotgraph(delays, len(var_names), 'black',selfcauses=True)
             plt.savefig(f"Results/{method_name}_Results_{architecture}/{indeptest}/{remove_suffix(file, '.csv')}.png")
             plt.close()
 
@@ -200,8 +196,9 @@ def architecture_prediction(method_name, architecture, dir, indeptest, gt_file, 
 
 
 if __name__ == "__main__":
-    # "Fork", "Mediator", "Vstructure", "Diamond", "7TS",
-    structs = ["7TS2H"]
+
+    #
+    structs = ["Fork", "Mediator", "Vstructure", "Diamond", "7TS", "7TS2H"]
 
     taumaxlist500 = [[2, 2, 5, 2, 2, 3, 2, 2, 1, 1],
                      [2, 2, 1, 2, 4, 2, 1, 2, 2, 1],
@@ -220,7 +217,7 @@ if __name__ == "__main__":
     for i in range(len(structs)):
 
         architecture = structs[i]
-        taumaxarch = taumaxlist500[i]
+        taumaxarch = taumaxlist1000[i]
         data_dir = os.listdir(f"ProcessedData/{architecture}")
 
         for file in data_dir:
@@ -228,5 +225,32 @@ if __name__ == "__main__":
             if file.endswith("groundtruth.csv"):
                 gt_file = f"ProcessedData/{architecture}/{file}"
 
-        architecture_prediction("PCMCI+", architecture, data_dir, "gpdc", gt_file, nb_points=1000,
-                                tau_max_list=None, pc_alpha=None)
+        architecture_prediction("LPCMCI", architecture, data_dir, "gpdc", gt_file, nb_points=1000,
+                                tau_max_list=taumaxarch, pc_alpha=0.001)
+    '''
+    datapd = pd.read_csv("cereal_database_TCDFfilter.csv")
+    datanp = datapd.to_numpy()
+    var_names = list(datapd.columns)
+    dataframe = pp.DataFrame(datanp, var_names=var_names)
+
+    test = select_indeptes("gpdc")
+    #determine_tau_max(var_names, dataframe, test)
+    tau_max=10
+
+    pcmci = LPCMCI(
+        dataframe=dataframe,
+        cond_ind_test=test,
+        verbosity=2)
+
+    graph = pcmci.run_lpcmci(tau_min=0, tau_max=tau_max, pc_alpha=0.05)['graph']
+    tp.plot_time_series_graph(figsize=(6, 7), graph=graph, var_names=var_names)
+    plt.show()
+
+    converted_graph = graph2csv("LPCMCI", "cereal_data", tau_max, graph, "cereal_database_TCDFfilter.csv", "gpdc", False)
+
+    pdgraph = pd.DataFrame(list(reader(converted_graph))).astype(int)
+    readgt, delays = getdelays(pdgraph, len(var_names))
+
+    plotgraph(delays, len(var_names), 'black', selfcauses=True)
+    plt.show()
+    '''
